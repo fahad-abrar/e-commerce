@@ -1,4 +1,4 @@
-const tryCatch = (func) => {
+const catchTry = (func) => {
     return async (req, res, next) => {
         try {
             await func(req, res, next);
@@ -8,4 +8,4 @@ const tryCatch = (func) => {
     };
 };
 
-export default tryCatch
+export default catchTry

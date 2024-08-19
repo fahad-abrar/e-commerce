@@ -1,4 +1,4 @@
-import ErrorHandler from "./errHandler";
+import ErrorHandler from "./errHandler.js";
 
 const errMiddlewere = (err, req, res, next) => {
 
@@ -30,7 +30,7 @@ const errMiddlewere = (err, req, res, next) => {
     }
 
     // return the error respose
-    return res.statusCode(err.statusCode).json({
+    return res.status(err.statusCode).json({
         success: false,
         message: err.message || 'internam server error',
         err: err
