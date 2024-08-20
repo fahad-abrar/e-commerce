@@ -48,7 +48,8 @@ const productSchema = new mongoose.Schema({
     review:[{
 
         userId : {
-            type:String ,
+            type: mongoose.Schema.Types.ObjectId,
+            ref:'User',
             required: false
         },
         user:{

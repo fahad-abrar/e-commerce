@@ -11,8 +11,13 @@ router.get('/product', (req, res)=>{
     })
 })
 
+// product route
 router.post('/product/createproduct', catchTry(ProductController.createProduct))
-router.post('/product/upload', catchTry(ProductController.uploadProduct))
+router.get('/product/get', catchTry(ProductController.getProduct))
+router.get('/product/get/:id', catchTry(ProductController.getProductById))
+router.get('/product/search', catchTry(ProductController.searchProduct))
+router.put('/product/update/:id', catchTry(ProductController.updateProduct))
+router.delete('/product/delete/:id', catchTry(ProductController.deleteProduct))
 
 
 
