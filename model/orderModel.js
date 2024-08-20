@@ -1,3 +1,4 @@
+import { urlencoded } from "express";
 import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema({
@@ -29,7 +30,8 @@ const orderSchema = new mongoose.Schema({
     },
     orderItem:[{
         product:{
-            type: String,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Product',
             required: true
         },
         name:{
@@ -37,7 +39,7 @@ const orderSchema = new mongoose.Schema({
             required: true
         },
         price:{
-            type: String,
+            type: Number,
             required: true
         },
         quantity:{
@@ -45,12 +47,19 @@ const orderSchema = new mongoose.Schema({
             required: true
         },
         image:{
-            type: String,
-            required: true
+            public_id:{
+                type: String,
+                required: true
+            },
+            url:{
+                type: String,
+                required: true
+            }
         }
     }],
     user:{
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
         required: true
     },
     paymentInfo:{
@@ -65,7 +74,7 @@ const orderSchema = new mongoose.Schema({
     },
     paidAt:{
         type: Date,
-        required: true
+        required: false
     },
     itemsPrice:{
         type: Number,
