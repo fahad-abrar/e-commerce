@@ -14,7 +14,7 @@ const resetToken = ()=>{
 
     // store the token and expire time
     const option = {
-        hashToken, expires
+        token, hashToken, expires
     }
     // sent the token and its expire time
     return option

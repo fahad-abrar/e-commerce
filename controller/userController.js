@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import resetToken from '../helper/resetToken.js'
 import sendMail from '../helper/sendMail.js'
+import crypto from 'crypto'
 
 class UserController{
 
@@ -232,10 +233,10 @@ class UserController{
         // check is the user is exist or not
         const findUser = await User.findOne({email})
         if(!findUser){
-            next( new ErrorHandler('user is not exist', 404))
+           return next( new ErrorHandler('user is not exist', 404))
         }
         // generate the token and its expiration time
-        const {hashToken, expires} = resetToken()
+        const {token, hashToken, expires} = resetToken()
 
         // store the token and its expires
         findUser.resetPasswordToken = hashToken
@@ -243,7 +244,7 @@ class UserController{
         await findUser.save()
 
         // generate link to reset password
-        const link = `${req.protocol}://${req.get('host')}/api/auth/password/reset/${hashToken}`
+        const link = `${req.protocol}://${req.get('host')}/api/auth/password/reset/${token}`
 
         try {
             // create a messsage
@@ -254,7 +255,7 @@ class UserController{
                 subject,
                 text
             }
-            console.log(mailBody)
+            
             //await sendMail(mailBody)
 
             // send the response 
@@ -264,30 +265,46 @@ class UserController{
                 mailBody: mailBody,
                 link: link
             })
-            
+
         } catch (err) {
             findUser.resetPasswordToken = undefined
             findUser.resetPasswordExpires = undefined
             await findUser.save()
-            next( new ErrorHandler('user is not exist', 404))            
+            return next( new ErrorHandler('fail to  send mail', 500))            
         }
-
-
-
     }
     static async resetPassword(req, res, next){
+
+        const {token} = req.params
+        const {newPassword, confirmPassword} = req.body
+
+        const hashToken = crypto.createHash('sha256')
+                                .update(token)
+                                .digest('hex')
+        // find the existing user
+        const findUser = await User.findOne({resetPasswordToken: hashToken,
+            resetPasswordExpires:{$gt: Date.now()}
+        })
+        if(!findUser){
+            return next( new ErrorHandler('user is not found', 404)) 
+        }   
         
+        // check if the new pass and confirm pass are same or not
+        if(newPassword !== confirmPassword){
+            return next( new ErrorHandler('new pass and confirm pass should be same', 404)) 
+
+        }
+        // save the new password and clear the token
+        findUser.password = newPassword
+        findUser.resetPasswordToken = undefined;
+        findUser.resetPasswordExpires = undefined;
+        await findUser.save()
+
+        return res.status(200).json({
+            success: true,
+            message:'password is updated'
+        })
     }
-
-
-
-
-
-
-
-
-
-
 }
 
 export default UserController
