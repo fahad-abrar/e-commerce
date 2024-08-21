@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
 
 const userSchema = new mongoose.Schema({
     name:{
@@ -38,6 +40,31 @@ const userSchema = new mongoose.Schema({
     resetPasswordToken: String,
     resetPasswordExpire: Date
 })
+
+userSchema.pre('save', async function (next){
+
+    if(!this.isModified('password')){
+        next()
+    }
+
+    const salt = await bcrypt.genSalt(10)
+    this.password = await bcrypt.hash(this.password, salt)
+  
+})
+
+userSchema.methods.getJWTToken = function (){
+    const payload ={
+        id: this._id,
+        name: this.name,
+        email: this.email
+    }
+    const secret = process.env.JWT_SECRET
+    const expires = process.env.JWT_EXPIRES
+    const token = jwt.sign(payload, secret, {
+        expiresIn: expires
+    })
+    return token
+}
 
 const User = mongoose.model('User', userSchema)
 export default User

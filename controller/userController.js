@@ -25,28 +25,25 @@ class UserController{
 
         let public_id = ''
         let url = ''
-
-
-        const salt = bcrypt.genSaltSync(10)
-        const hashPass = bcrypt.hashSync(password, salt)
-
-
+ 
         // create a new user
         const newUser = await User.create({
             name, 
             email, 
-            password: hashPass, 
+            password, 
             role,
             avatar:{
                 public_id,
                 url
             } 
         })
+        const token = newUser.getJWTToken()
 
         // return the file
         return res.status(200).json({
             success: false,
             message:'user is created',
+            token: token,
             user: newUser
         })
     }
@@ -153,18 +150,8 @@ class UserController{
             next(new ErrorHandler('invalid credential', 404))
         }
 
-        // make a payload to store in the token
-        const payload ={
-            id: findUser._id,
-            email: findUser.email,
-            role: findUser.role
-        }
-
-        // to sign in jwt
-        const token = jwt.sign(payload, process.env.JWT_SECRET, {
-            expiresIn: process.env.JWT_EXPIRES
-        })
-        console.log('token--->>>>' , token)
+        // generate jwt token
+        const token = findUser.getJWTToken()
 
         // set cookie option
         const option ={
@@ -174,19 +161,67 @@ class UserController{
         // send the response
         return res.cookie('token', token, option).status(200).json({
             success: true,
-            message:'user is logedin',
+            message:'user is logged in',
             token: token
         })
     }
     static async logOutUser(req, res, next){
-        const user = req.user
-        return res.status(200).json({
+
+        // access the id from the auth user
+        const {id} = req.user
+
+        // find the auth user
+        const authUser = await User.findById(id)
+        if(!authUser){
+            next(new ErrorHandler('invalid credential', 404))
+        }
+
+        // set the cookie option
+        const option = {
+            expires : new Date(Date.now()+10),
+            httpOnly: true
+        }
+
+        // clear the cookie and send the response
+        return res.cookie('token', null, option).status(200).json({
             success: true,
             message:' user is logout',
-            user: user
+            user: authUser
         })
     }
     static async changePassword(req, res, next){
+        //access the id and password
+        const {id} = req.user
+        const {password, confirmPassword} = req.body
+
+        // find the auth user
+        const authUser = await User.findById(id)
+        if(!authUser){
+            next( new ErrorHandler('auth user is not found', 404))
+        }
+
+        // check if the password and confirm password are same or not
+        if(password !== confirmPassword){
+            next( new ErrorHandler('password and confirmPassword sholud be same', 404))
+        }
+
+        // verify the password
+        const isMatch = bcrypt.compareSync(password, authUser.password)
+
+        //check if the given password is macth or not
+        if(!isMatch){
+            next( new ErrorHandler('incorrect password', 400))
+        }
+
+        // save the new password
+        authUser.password = password
+        await authUser.save()
+
+        return res.status(200).json({
+            success: true,
+            message: ' password is changed'
+        })
+
 
     }
     static async forgotPassword(req, res, next){
