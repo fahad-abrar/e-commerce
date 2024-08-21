@@ -36,7 +36,12 @@ router.get('/auth/user/:id', catchTry(UserController.getSingleUser))
 
 
 router.post('/auth/login', catchTry(UserController.logInUser))
-router.get('/auth/logout',isAuthenticate, catchTry(UserController.logOutUser))
+router.get('/auth/logout', isAuthenticate, catchTry(UserController.logOutUser))
+
+// password route
+router.post('/auth/password/change', catchTry(UserController.changePassword))
+router.post('/auth/password/forgot', catchTry(UserController.forgotPassword))
+router.post('/auth/password/reset/:hashToken', catchTry(UserController.resetPassword))
 
 
 export default router

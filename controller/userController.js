@@ -2,6 +2,8 @@ import User from '../model/userModel.js'
 import ErrorHandler from '../errorhandler/errHandler.js'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
+import resetToken from '../helper/resetToken.js'
+import sendMail from '../helper/sendMail.js'
 
 class UserController{
 
@@ -225,7 +227,53 @@ class UserController{
 
     }
     static async forgotPassword(req, res, next){
-        
+        const {email} = req.body
+
+        // check is the user is exist or not
+        const findUser = await User.findOne({email})
+        if(!findUser){
+            next( new ErrorHandler('user is not exist', 404))
+        }
+        // generate the token and its expiration time
+        const {hashToken, expires} = resetToken()
+
+        // store the token and its expires
+        findUser.resetPasswordToken = hashToken
+        findUser.resetPasswordExpires = expires
+        await findUser.save()
+
+        // generate link to reset password
+        const link = `${req.protocol}://${req.get('host')}/api/auth/password/reset/${hashToken}`
+
+        try {
+            // create a messsage
+            const text = `your  reset password token is :- \n\n ${link} \n\n if you have not requested this , plz ignore it`
+            const subject = 'request for reset password'
+            const mailBody = {
+                to: findUser.email,
+                subject,
+                text
+            }
+            console.log(mailBody)
+            //await sendMail(mailBody)
+
+            // send the response 
+            return res.status(200).json({
+                success: true,
+                message:'link send to the user email',
+                mailBody: mailBody,
+                link: link
+            })
+            
+        } catch (err) {
+            findUser.resetPasswordToken = undefined
+            findUser.resetPasswordExpires = undefined
+            await findUser.save()
+            next( new ErrorHandler('user is not exist', 404))            
+        }
+
+
+
     }
     static async resetPassword(req, res, next){
         
