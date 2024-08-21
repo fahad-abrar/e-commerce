@@ -51,13 +51,13 @@ class UserController{
         })
     }
     static async updateUser(req, res, next){
-        const {id} =  req.params
+        const {id} =  req.user
         const info = req.body
 
         // find the user is exist or not
         const findUser = await User.findById(id).select("-password")
-        console.log(findUser)
-
+        
+        // check is the user is find or not
         if(!findUser){
             next( new ErrorHandler('user is not found', 404))
         }
@@ -81,6 +81,15 @@ class UserController{
     }
     static async getAllUser(req, res, next){
         const {page=1, limit=1} = req.query
+
+        // find the authe user
+        const {id} = req.user
+        const authUser = await User.findById(id)
+
+        // check if the auth user is exist or not
+        if(!authUser){
+            return next(new ErrorHandler('user is not found', 404))
+        }
 
         //pagination portion
         if(page<0){
@@ -112,14 +121,17 @@ class UserController{
             pages: totalPage,
             user: findUser
         })
-        
-                            
-
-
-
     }
     static async getSingleUser(req, res, next){
         const {id} = req.params
+
+        // find the authe user
+        const authUser = await User.findById(req.user.id)
+
+        // check if the auth user is exist or not
+        if(!authUser){
+            return next(new ErrorHandler('user is not found', 404))
+        }
 
         //find the user 
         const findUser = await User.findById(id)
@@ -134,6 +146,24 @@ class UserController{
         })
 
 
+    }
+    static async getUser(req, res, next){
+
+        // find the authe user
+        const {id} = req.user
+        const authUser = await User.findById(id)
+
+        // check if the auth user is exist or not
+        if(!authUser){
+            return next(new ErrorHandler('user is not found', 404))
+        }
+
+        // return the response
+        return res.status(200).json({
+            success: true,
+            message: 'user is retrieved',
+            user: authUser
+        })
     }
     static async logInUser(req, res, next){
 
@@ -255,7 +285,7 @@ class UserController{
                 subject,
                 text
             }
-            
+
             //await sendMail(mailBody)
 
             // send the response 

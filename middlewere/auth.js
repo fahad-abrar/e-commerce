@@ -9,7 +9,7 @@ const isAuthenticate = (req, res, next)=>{
     
     // check if the token is found or not
     if(!token){
-        next( new ErrorHandler('unauthorized', 401))
+        next( new ErrorHandler('unauthorized to access', 401))
     }
     try{
         // verufy the token

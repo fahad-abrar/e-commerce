@@ -30,11 +30,11 @@ router.delete('/product/delete/:id', catchTry(ProductController.deleteProduct))
 
 // user route 
 router.post('/auth/register', catchTry(UserController.registerUser))
-router.put('/auth/update/:id', catchTry(UserController.updateUser))
-router.get('/auth/alluser', catchTry(UserController.getAllUser))
-router.get('/auth/user/:id', catchTry(UserController.getSingleUser))
+router.put('/auth/update/:id', isAuthenticate, catchTry(UserController.updateUser))
+router.get('/auth/alluser', isAuthenticate, catchTry(UserController.getAllUser))
+router.get('/auth/user/:id', isAuthenticate, catchTry(UserController.getSingleUser))
 
-
+router.get('/auth/me', isAuthenticate, catchTry(UserController.getUser))
 router.post('/auth/login', catchTry(UserController.logInUser))
 router.get('/auth/logout', isAuthenticate, catchTry(UserController.logOutUser))
 
