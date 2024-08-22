@@ -3,7 +3,7 @@ import catchTry from '../errorhandler/catchTryBlock .js'
 import ProductController from '../controller/productController.js'
 import UserController from '../controller/userController.js'
 import isAuthenticate from '../middlewere/auth.js'
-import createReview from '../controller/reviewController.js'
+import ReviewController from '../controller/reviewController.js'
 
 
 
@@ -46,7 +46,10 @@ router.post('/auth/password/reset/:token', catchTry(UserController.resetPassword
 
 
 // review route
-router.post('/auth/review/:productId', isAuthenticate, catchTry(createReview))
+router.post('/auth/review/:productId', isAuthenticate, catchTry(ReviewController.createReview))
+router.put('/auth/review/update/:id', isAuthenticate, catchTry(ReviewController.updateReview))
+router.delete('/auth/review/delete/:id', isAuthenticate, catchTry(ReviewController.deleteReview))
+router.post('/auth/review/:id', isAuthenticate, catchTry(ReviewController.updateReview))
 
 
 
