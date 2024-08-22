@@ -1,6 +1,7 @@
 
 import ErrorHandler from "../errorhandler/errHandler.js"
 import Product from "../model/productModel.js"
+import Review from "../model/reviewModel.js"
 import fileUploader from '../utils/fileUploader.js'
 import fs from 'fs'
 import catchTry from "../errorhandler/catchTryBlock .js"
@@ -10,7 +11,7 @@ class ProductController{
     // create product 
     static async createProduct( req, res){
 
-        const {name, description, price, rating, category, stock, noOFReview, review} = req.body
+        const {name, description, price, ratings, category, stock, noOFReview} = req.body
 
         // check all the field is provided or not
         if(!name || !description || !price || !category || !stock){
@@ -24,9 +25,8 @@ class ProductController{
             price, 
             category, 
             stock,
-            rating,
-            noOFReview,
-            review: [{ review}] 
+            ratings,
+            noOFReview      
         }
 
         // create product database

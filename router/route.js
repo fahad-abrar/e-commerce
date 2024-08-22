@@ -3,6 +3,7 @@ import catchTry from '../errorhandler/catchTryBlock .js'
 import ProductController from '../controller/productController.js'
 import UserController from '../controller/userController.js'
 import isAuthenticate from '../middlewere/auth.js'
+import createReview from '../controller/reviewController.js'
 
 
 
@@ -42,6 +43,17 @@ router.get('/auth/logout', isAuthenticate, catchTry(UserController.logOutUser))
 router.post('/auth/password/change', catchTry(UserController.changePassword))
 router.post('/auth/password/forgot', catchTry(UserController.forgotPassword))
 router.post('/auth/password/reset/:token', catchTry(UserController.resetPassword))
+
+
+// review route
+router.post('/auth/review/:productId', isAuthenticate, catchTry(createReview))
+
+
+
+
+
+
+
 
 
 export default router

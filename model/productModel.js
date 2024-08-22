@@ -14,7 +14,7 @@ const productSchema = new mongoose.Schema({
         type: Number,
         required:[ true, 'plz provide product price']
     },
-    rating:{
+    ratings:{
         type:Number,
         default: 0
     },
@@ -45,12 +45,11 @@ const productSchema = new mongoose.Schema({
         type:Number,
         default: 0
     },
-    review:[{
-
+    reviews:[{
         userId : {
             type: mongoose.Schema.Types.ObjectId,
             ref:'User',
-            required: false
+            required: true
         },
         user:{
             type:String,
@@ -74,3 +73,7 @@ const productSchema = new mongoose.Schema({
 const Product = mongoose.model('Product', productSchema)
 
 export default Product
+
+
+
+
