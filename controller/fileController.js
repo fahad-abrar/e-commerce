@@ -7,136 +7,6 @@ import path from "path";
 import fs from "fs";
 
 class FileController {
-  static async profileFileUpload(req, res, next) {
-    // find the user profile
-    const { id } = req.user;
-    const user = await User.findById(id);
-    if (!user) {
-      return next(new ErrorHandler("user is not found", 400));
-    }
-
-    // access the uploaded file
-    if (!req.file || req.file.fieldname !== "avatar") {
-      return next(new ErrorHandler("No file uploaded", 400));
-    }
-
-    // store the file and set up a file skeleton
-    const file = req.file;
-    const fileSkeleton = {
-      userId: req.user.id,
-      public_id: file.filename,
-      url: file.path,
-    };
-
-    // store the file in the data base
-    const avatar = await File.create(fileSkeleton);
-
-    // push the file id and url in the user profile
-    user.avatar.public_id = file.filename;
-    user.avatar.url = file.path;
-    await user.save({
-      validateBeforeSave: false,
-    });
-
-    // return the response
-    res.status(200).json({
-      success: true,
-      message: "File uploaded",
-      avatar,
-    });
-  }
-
-  static async profileFileUpdate(req, res, next) {
-    const { id } = req.params;
-
-    // check if the file is exist or not
-    const file = await File.findById(id);
-    if (!file) {
-      return next(new ErrorHandler("file is not find", 400));
-    }
-
-    //find the authe user
-    const user = await User.findById(req.user.id);
-
-    // check if the user is authorized to update the file
-    if (req.user.id !== file.userId) {
-      return next(
-        new ErrorHandler("user is not authorized to update the file", 400)
-      );
-    }
-
-    // access the uploaded file
-    if (!req.file || req.file.fieldname !== "avatar") {
-      return next(new ErrorHandler("No file uploaded", 400));
-    }
-
-    // store the new file and set up a skeleton
-    const newFile = req.file;
-    const updateFileSkeleton = {
-      public_id: newFile.filename,
-      url: newFile.path,
-    };
-
-    // update the file
-    const updateFile = await File.findByIdAndUpdate(id, updateFileSkeleton, {
-      new: true,
-      runValidators: true,
-    });
-
-    // update the file id and url of the user profile
-    user.avatar.public_id = newFile.filename;
-    user.avatar.url = newFile.path;
-    await user.save({
-      validateBeforeSave: false,
-    });
-
-    // send the response
-    return res.status(200).json({
-      success: true,
-      message: "File uploaded",
-      updateFile,
-    });
-  }
-
-  static async profileFiledelete(req, res, next) {
-    const { id } = req.params;
-
-    // check if the file is exist or not
-    const file = await File.findById(id);
-    if (!file) {
-      return next(new ErrorHandler("file is not found", 404));
-    }
-
-    //find the authe user
-    const user = await User.findById(req.user.id);
-
-    // check if the user is authorized to delete the file
-    if (req.user.id !== file.userId) {
-      return next(
-        new ErrorHandler("user is not authorized to delete the file", 400)
-      );
-    }
-
-    // deleted the file
-    const deletefile = await File.findByIdAndDelete(id);
-
-    // update the file id and url of the user profile
-    user.avatar.public_id = undefined;
-    user.avatar.url = undefined;
-    await user.save({
-      validateBeforeSave: false,
-    });
-
-    // send the response
-    return res.status(200).json({
-      success: true,
-      message: "File is deleted",
-      deletefile,
-    });
-  }
-
-  static async profileFile() {}
-
   static async fileUpload(req, res, next) {
     // find the user profile
     const { id } = req.user;
@@ -229,9 +99,59 @@ class FileController {
     }
   }
 
-  static async productFileUpdate() {}
+  static async profileFileUpdate(req, res, next) {
+    const { id } = req.params;
 
-  static async productFileDetete(req, res, next) {
+    // check if the file is exist or not
+    const file = await File.findById(id);
+    if (!file) {
+      return next(new ErrorHandler("file is not find", 400));
+    }
+
+    //find the authe user
+    const user = await User.findById(req.user.id);
+
+    // check if the user is authorized to update the file
+    if (req.user.id !== file.userId) {
+      return next(
+        new ErrorHandler("user is not authorized to update the file", 400)
+      );
+    }
+
+    // access the uploaded file
+    if (!req.file || req.file.fieldname !== "avatar") {
+      return next(new ErrorHandler("No file uploaded", 400));
+    }
+
+    // store the new file and set up a skeleton
+    const newFile = req.file;
+    const updateFileSkeleton = {
+      public_id: newFile.filename,
+      url: newFile.path,
+    };
+
+    // update the file
+    const updateFile = await File.findByIdAndUpdate(id, updateFileSkeleton, {
+      new: true,
+      runValidators: true,
+    });
+
+    // update the file id and url of the user profile
+    user.avatar.public_id = newFile.filename;
+    user.avatar.url = newFile.path;
+    await user.save({
+      validateBeforeSave: false,
+    });
+
+    // send the response
+    return res.status(200).json({
+      success: true,
+      message: "File uploaded",
+      updateFile,
+    });
+  }
+
+  static async profileFiledelete(req, res, next) {
     const { id } = req.params;
 
     // check if the file is exist or not
@@ -239,8 +159,6 @@ class FileController {
     if (!file) {
       return next(new ErrorHandler("file is not found", 404));
     }
-
-    console.log(file);
 
     //find the authe user
     const user = await User.findById(req.user.id);
@@ -250,14 +168,6 @@ class FileController {
       return next(
         new ErrorHandler("user is not authorized to delete the file", 400)
       );
-    }
-
-    // delete the file from storage
-    const filePath = path.join(process.cwd(), "/public", file.url);
-    try {
-      fs.unlinkSync(filePath);
-    } catch (error) {
-      return next(new ErrorHandler("File deletion failed", 500));
     }
 
     // deleted the file
@@ -273,14 +183,148 @@ class FileController {
     // send the response
     return res.status(200).json({
       success: true,
-      message: "File deleted",
+      message: "File is deleted",
       deletefile,
     });
   }
 
-  static async productFileById() {}
+  static async productFileUpdate(req, res, next) {
+    const { id } = req.params;
+    const { productId } = req.body;
 
-  static async getallFile() {}
+    // check if the file is exist or not
+    const file = await File.findById(id);
+    if (!file) {
+      return next(new ErrorHandler("file is not find", 400));
+    }
+
+    // check if the file is exist or not
+    const product = await Product.findById(productId);
+    if (!product) {
+      return next(new ErrorHandler("product is not find", 400));
+    }
+
+    // check if the user is authorized to update the file
+    if (id !== file._id.toString()) {
+      return next(
+        new ErrorHandler("this requsest is not valid for this product", 400)
+      );
+    }
+
+    // access the uploaded file
+    if (!req.file || req.file.fieldname !== "image") {
+      return next(new ErrorHandler(" image filed is not valid", 400));
+    }
+
+    // store the new file and set up a skeleton
+    const newFile = req.file;
+
+    console.log(newFile);
+    const updateFileSkeleton = {
+      public_id: newFile.filename,
+      url: newFile.path,
+    };
+
+    // update the file
+    const updateFile = await File.findByIdAndUpdate(id, updateFileSkeleton, {
+      new: true,
+      runValidators: true,
+    });
+
+    // update the file id and url of the user profile
+    product.image.public_id = newFile.filename;
+    product.image.url = newFile.path;
+    await product.save({
+      validateBeforeSave: false,
+    });
+
+    // send the response
+    return res.status(200).json({
+      success: true,
+      message: "File uploaded",
+      updateFile,
+    });
+  }
+
+  static async productFileDelete(req, res, next) {
+    // check if the product is exist or not
+    const { productId, id } = req.params;
+    console.log(productId, id);
+    const product = await Product.findById(productId);
+    if (!product) {
+      return next(new ErrorHandler("product is not found", 404));
+    }
+    //console.log("product-->>", product);
+
+    // check if the file is exist or not
+    const file = await File.findById(id);
+    if (!file) {
+      return next(new ErrorHandler("file is not found", 404));
+    }
+    console.log("file-->>", file);
+
+    // deleted the file
+    const deletefile = await File.findByIdAndDelete(id);
+
+    // remove the file (image) from the product database
+    product.image = product.image.filter((img) => {
+      return img._id.toString() !== id;
+    });
+
+    // save the product
+    await product.save({
+      validateBeforeSave: false,
+    });
+
+    // send the response
+    return res.status(200).json({
+      success: true,
+      message: "File is deleted",
+      deletefile,
+    });
+  }
+
+  static async getprofileFile(req, res, next) {
+    const { id } = req.user;
+    // check if the file is exist or not
+    const file = await File.find({
+      userId: id,
+    });
+    if (!file) {
+      return next(new ErrorHandler("file is no found", 404));
+    }
+    return res.status(200).json({
+      success: true,
+      message: "file is retrieved",
+      file,
+    });
+  }
+
+  static async getFileById(req, res, next) {
+    const { id } = req.params;
+    // check if the file is exist or not
+    const file = await File.findById(id);
+    if (!file) {
+      return next(new ErrorHandler("file is no found", 404));
+    }
+    return res.status(200).json({
+      success: true,
+      message: "file is retrieved",
+      file,
+    });
+  }
+
+  static async getallFile(req, res, next) {
+    const files = await File.find();
+    if (files.length < 0) {
+      return next(new ErrorHandler("file is no found", 404));
+    }
+    return res.status(200).json({
+      success: true,
+      message: "all the files are retrieved",
+      files,
+    });
+  }
 }
 
 export default FileController;

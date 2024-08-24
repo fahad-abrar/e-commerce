@@ -109,10 +109,13 @@ router.delete(
 
 // file upload --- >>>
 router.post(
-  "/auth/avatar",
+  "/product/image/:productId?",
   isAuthenticate,
-  upload.single("avatar"),
-  catchTry(FileController.profileFileUpload)
+  upload.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "image", maxCount: 8 },
+  ]),
+  catchTry(FileController.fileUpload)
 );
 
 //update profile avatar
@@ -131,20 +134,9 @@ router.delete(
 );
 
 //get profile avatar
-router.get("/auth/avatar", isAuthenticate, FileController.profileFile);
+router.get("/auth/avatar", isAuthenticate, FileController.getprofileFile);
 
 // <<< ========  product route  ======== >>> //
-
-// upload file
-router.post(
-  "/product/image/:productId?",
-  isAuthenticate,
-  upload.fields([
-    { name: "avatar", maxCount: 1 },
-    { name: "image", maxCount: 8 },
-  ]),
-  catchTry(FileController.fileUpload)
-);
 
 // update file
 router.put(
@@ -156,9 +148,9 @@ router.put(
 
 // delete file
 router.delete(
-  "/product/image/:id",
+  "/product/image/:productId?:id",
   isAuthenticate,
-  catchTry(FileController.productFileDetete)
+  catchTry(FileController.productFileDelete)
 );
 
 // get file by id
@@ -166,20 +158,10 @@ router.get(
   "/product/image/:id",
   isAuthenticate,
   upload.array("image", 10),
-  catchTry(FileController.productFileById)
+  catchTry(FileController.getFileById)
 );
 
 // get all file
 router.get("/product/image", isAuthenticate, FileController.getallFile);
-
-router.post(
-  "/product/image/demo/:productId?",
-  isAuthenticate,
-  upload.fields([
-    { name: "avatar", maxCount: 1 },
-    { name: "image", maxCount: 8 },
-  ]),
-  catchTry(demo)
-);
 
 export default router;
