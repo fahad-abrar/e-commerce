@@ -5,6 +5,10 @@ const fileSchema = new mongoose.Schema({
     type: String,
     required: [true, "user or product id is required"],
   },
+  productId: {
+    type: String,
+    required: [false, "user or product id is required"],
+  },
   public_id: {
     type: String,
     required: false,

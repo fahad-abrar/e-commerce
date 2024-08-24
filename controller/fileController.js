@@ -7,7 +7,7 @@ import path from "path";
 import fs from "fs";
 
 class FileController {
-  static async singleFile(req, res, next) {
+  static async profileFileUpload(req, res, next) {
     // find the user profile
     const { id } = req.user;
     const user = await User.findById(id);
@@ -46,7 +46,7 @@ class FileController {
     });
   }
 
-  static async updateSingleFile(req, res, next) {
+  static async profileFileUpdate(req, res, next) {
     const { id } = req.params;
 
     // check if the file is exist or not
@@ -98,7 +98,7 @@ class FileController {
     });
   }
 
-  static async deleteSingleFile(req, res, next) {
+  static async profileFiledelete(req, res, next) {
     const { id } = req.params;
 
     // check if the file is exist or not
@@ -135,7 +135,103 @@ class FileController {
     });
   }
 
-  static async deleteSingleFiles(req, res, next) {
+  static async profileFile() {}
+
+  static async fileUpload(req, res, next) {
+    // find the user profile
+    const { id } = req.user;
+    const user = await User.findById(id);
+    if (!user) {
+      return next(new ErrorHandler("user is not found", 400));
+    }
+
+    // check if the incomimg file is avatar or image
+    if (!req.files || (!req.files.avatar && !req.files.image)) {
+      return res.status(400).json({
+        success: false,
+        message: "no files were uploaded or file fields are missing",
+      });
+    }
+
+    // handle the avatar file
+    if (req.files.avatar && req.files.avatar.length > 0) {
+      const files = req.files.avatar;
+
+      // set up a file skeleton
+      const file = files.map((file) => {
+        const fileSkeleton = {
+          userId: id,
+          public_id: file.filename,
+          url: file.path,
+        };
+        return fileSkeleton;
+      });
+
+      // store the avatar file in the data base
+      const avatar = await File.create(file);
+
+      //update the avatar of the profile
+      user.avatar.public_id = file[0].public_id;
+      user.avatar.url = file[0].url;
+      await user.save({
+        validateBeforeSave: false,
+      });
+
+      // return the response
+      return res.status(200).json({
+        success: true,
+        message: "avatar file is uploaded",
+        avatar,
+      });
+    }
+
+    // handle the image file
+    console.log("image file is received");
+    if (req.files.image && req.files.image.length > 0) {
+      console.log(" igame file received =>>> ", req.files.image);
+
+      // check if the product is exist or not
+      const { productId } = req.params;
+      const product = await Product.findById(productId);
+      if (!product) {
+        return next(new ErrorHandler("product is not found", 404));
+      }
+
+      const files = req.files.image;
+
+      // set up the skeleton
+      console.log(files);
+      const file = files.map((file) => {
+        const fileSkeleton = {
+          productId,
+          userId: id,
+          public_id: file.filename,
+          url: file.path,
+        };
+        return fileSkeleton;
+      });
+
+      // store image file in data base
+      const image = await File.create(file);
+
+      // push the file id and url in the user profile
+      product.image.push(...file);
+      await product.save({
+        validateBeforeSave: false,
+      });
+
+      // return the response
+      return res.status(200).json({
+        success: true,
+        message: "image file is uploaded",
+        product,
+      });
+    }
+  }
+
+  static async productFileUpdate() {}
+
+  static async productFileDetete(req, res, next) {
     const { id } = req.params;
 
     // check if the file is exist or not
@@ -182,7 +278,9 @@ class FileController {
     });
   }
 
-  static async multiFile() {}
+  static async productFileById() {}
+
+  static async getallFile() {}
 }
 
 export default FileController;

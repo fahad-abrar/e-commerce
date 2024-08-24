@@ -7,6 +7,7 @@ import ReviewController from "../controller/reviewController.js";
 import OrderController from "../controller/orderController.js";
 import FileController from "../controller/fileController.js";
 import upload from "../helper/multer.js";
+import demo from "../controller/demo.js";
 
 const router = express.Router();
 
@@ -104,12 +105,14 @@ router.delete(
   catchTry(OrderController.deleteOrder)
 );
 
+// <<< ========  profile route  ======== >>> //
+
 // file upload --- >>>
 router.post(
   "/auth/avatar",
   isAuthenticate,
   upload.single("avatar"),
-  FileController.singleFile
+  catchTry(FileController.profileFileUpload)
 );
 
 //update profile avatar
@@ -117,29 +120,66 @@ router.put(
   "/auth/avatar/:id",
   isAuthenticate,
   upload.single("avatar"),
-  FileController.updateSingleFile
+  catchTry(FileController.profileFileUpdate)
 );
 
 //delete profile avatar
 router.delete(
   "/auth/avatar/:id",
   isAuthenticate,
-  FileController.deleteSingleFile
+  catchTry(FileController.profileFiledelete)
 );
 
 //get profile avatar
-router.get(
-  "/auth/avatar",
+router.get("/auth/avatar", isAuthenticate, FileController.profileFile);
+
+// <<< ========  product route  ======== >>> //
+
+// upload file
+router.post(
+  "/product/image/:productId?",
   isAuthenticate,
-  upload.single("avatar"),
-  FileController.updateSingleFile
+  upload.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "image", maxCount: 8 },
+  ]),
+  catchTry(FileController.fileUpload)
 );
 
-router.post(
+// update file
+router.put(
   "/product/image/:id",
   isAuthenticate,
+  upload.single("image"),
+  catchTry(FileController.productFileUpdate)
+);
 
-  FileController.multiFile
+// delete file
+router.delete(
+  "/product/image/:id",
+  isAuthenticate,
+  catchTry(FileController.productFileDetete)
+);
+
+// get file by id
+router.get(
+  "/product/image/:id",
+  isAuthenticate,
+  upload.array("image", 10),
+  catchTry(FileController.productFileById)
+);
+
+// get all file
+router.get("/product/image", isAuthenticate, FileController.getallFile);
+
+router.post(
+  "/product/image/demo/:productId?",
+  isAuthenticate,
+  upload.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "image", maxCount: 8 },
+  ]),
+  catchTry(demo)
 );
 
 export default router;

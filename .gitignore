@@ -5,3 +5,6 @@ node_modules
 public
 
 utils/utils.js
+
+
+controller/demo.js
