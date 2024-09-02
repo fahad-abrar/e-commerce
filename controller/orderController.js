@@ -1,7 +1,9 @@
 import Product from "../model/productModel.js";
 import User from "../model/userModel.js";
+import Notification from "../model/notificationModel.js";
 import ErrorHandler from "../errorhandler/errHandler.js";
 import Order from "../model/orderModel.js";
+import sendMail from "../helper/sendMail.js";
 
 class OrderController {
   static async newOrders(req, res, next) {
@@ -34,6 +36,22 @@ class OrderController {
 
       // store the data in order data frame
       const order = await Order.create(orderSkeleton);
+
+      // set up notification schema
+      const notificationSchema = {
+        userId: req.user.id,
+        title: " a new order is placed",
+        message: `${req.user.name} order this ${order.orderItem} product`,
+      };
+      const notification = await Notification.create(notificationSchema);
+
+      // set up a mail option to send the user
+      const mailOps = {
+        to: req.user.email,
+        subject: "order is received",
+        text: "....",
+      };
+      sendMail(mailOps);
 
       // send the response
       return res.status(200).json({
