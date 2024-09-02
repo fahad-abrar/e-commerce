@@ -3,7 +3,9 @@ import ErrorHandler from "../errorhandler/errHandler.js";
 import bcrypt from "bcrypt";
 import resetToken from "../helper/resetToken.js";
 import sendMail from "../helper/sendMail.js";
+import redis from "../database/redis.js";
 import crypto from "crypto";
+import signInJwt from "../helper/signInJwt.js";
 
 class UserController {
   static async registerUser(req, res, next) {
@@ -12,12 +14,12 @@ class UserController {
 
       // check if all the fields is provided or not
       if (!name || !email || !password) {
-        next(new ErrorHandler("all the fields are required", 404));
+        return next(new ErrorHandler("all the fields are required", 404));
       }
       // check if the user is exist or not
       const existUser = await User.findOne({ email });
       if (existUser) {
-        next(new ErrorHandler("user is already  exist", 404));
+        return next(new ErrorHandler("user is already  exist", 404));
       }
 
       // handle the files if it is provided
@@ -32,6 +34,12 @@ class UserController {
         password,
         role,
       });
+
+      //set the redis client instance
+      const redisClient = redis();
+
+      // send the user into the cashe
+      await redisClient.set(`user:${newUser._id}`, JSON.stringify(newUser));
 
       // return the file
       return res.status(200).json({
@@ -53,7 +61,7 @@ class UserController {
 
       // check is the user is find or not
       if (!findUser) {
-        next(new ErrorHandler("user is not found", 404));
+        return next(new ErrorHandler("user is not found", 404));
       }
 
       // update the user profile
@@ -100,7 +108,7 @@ class UserController {
         .skip(parseInt(skip));
 
       if (findUser.lenght === 0) {
-        next(new ErrorHandler("user is not found", 404));
+        return next(new ErrorHandler("user is not found", 404));
       }
 
       // find the number total user
@@ -125,7 +133,7 @@ class UserController {
       const { id } = req.params;
       const findUser = await User.findById(id);
       if (findUser.lenght === 0) {
-        next(new ErrorHandler("user is not found", 404));
+        return next(new ErrorHandler("user is not found", 404));
       }
 
       return res.status(200).json({
@@ -166,24 +174,31 @@ class UserController {
       // check if the user is exist or not
       const findUser = await User.findOne({ email });
       if (!findUser) {
-        next(new ErrorHandler("user is not found", 404));
+        return next(new ErrorHandler("user is not found", 404));
       }
 
       // check the password is match or not
       const isMatch = bcrypt.compareSync(password, findUser.password);
 
       if (!isMatch) {
-        next(new ErrorHandler("invalid credential", 404));
+        return next(new ErrorHandler("invalid credential", 404));
       }
 
       // generate jwt token
-      const token = findUser.getJWTToken();
+      const token = signInJwt(findUser);
 
       // set cookie option
       const option = {
         expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
         httpOnly: true,
       };
+
+      //set the redis client instance
+      const redisClient = redis();
+
+      // remove user from the cashe
+      await redisClient.set(`user:${findUser._id}`, JSON.stringify(findUser));
+
       // send the response
       return res.cookie("token", token, option).status(200).json({
         success: true,
@@ -202,7 +217,7 @@ class UserController {
       // find the auth user
       const authUser = await User.findById(id);
       if (!authUser) {
-        next(new ErrorHandler("invalid credential", 404));
+        return next(new ErrorHandler("invalid credential", 404));
       }
 
       // set the cookie option
@@ -210,6 +225,12 @@ class UserController {
         expires: new Date(Date.now() + 10),
         httpOnly: true,
       };
+
+      //set the redis client instance
+      const redisClient = redis();
+
+      // remove user from the cashe
+      await redisClient.del(`user:${authUser._id}`);
 
       // clear the cookie and send the response
       return res.cookie("token", null, option).status(200).json({
@@ -230,12 +251,12 @@ class UserController {
       // find the auth user
       const authUser = await User.findById(id);
       if (!authUser) {
-        next(new ErrorHandler("auth user is not found", 404));
+        return next(new ErrorHandler("auth user is not found", 404));
       }
 
       // check if the password and confirm password are same or not
       if (password !== confirmPassword) {
-        next(
+        return next(
           new ErrorHandler("password and confirmPassword sholud be same", 404)
         );
       }
@@ -245,7 +266,7 @@ class UserController {
 
       //check if the given password is macth or not
       if (!isMatch) {
-        next(new ErrorHandler("incorrect password", 400));
+        return next(new ErrorHandler("incorrect password", 400));
       }
 
       // save the new password

@@ -38,11 +38,10 @@ const productSchema = new mongoose.Schema({
   ],
   category: {
     type: String,
-    required: [true, "plz provide product category"],
+    required: [false, "plz provide product category"],
   },
   stock: {
     type: Number,
-    required: [true, "plz provide available stock"],
     max: [999, "stock cannot exceed 4 charecter"],
     default: 1,
   },

@@ -1,14 +1,15 @@
 import ErrorHandler from "../errorhandler/errHandler.js";
 import Product from "../model/productModel.js";
+import redis from "../database/redis.js";
 
 class ProductController {
-  static async createProduct(req, res) {
+  static async createProduct(req, res, next) {
     try {
       const { name, description, price, ratings, category, stock, noOFReview } =
         req.body;
 
       // check all the field is provided or not
-      if (!name || !description || !price || !category || !stock) {
+      if (!name || !description || !price || !category) {
         throw new ErrorHandler("all the fields are required", 404);
       }
 
@@ -26,6 +27,19 @@ class ProductController {
       // create product database
       const product = await Product.create(productData);
 
+      // cache the product data in Redis
+      try {
+        const redisClient = redis();
+        if (redisClient) {
+          await redisClient.set(
+            `product:${product._id}`,
+            JSON.stringify(product)
+          );
+        }
+      } catch (redisError) {
+        console.error("failed to cache product in redis:", redisError.message);
+      }
+
       // send the response
       return res.status(200).json({
         success: true,
@@ -36,7 +50,7 @@ class ProductController {
       return next(new ErrorHandler(error.message, 500));
     }
   }
-  static async getProduct(req, res) {
+  static async getProduct(req, res, next) {
     try {
       const { page = 1, limit = 1 } = req.query;
 
@@ -75,9 +89,23 @@ class ProductController {
       return next(new ErrorHandler(error.message, 500));
     }
   }
-  static async getProductById(req, res) {
+  static async getProductById(req, res, next) {
     try {
       const { id } = req.params;
+
+      //set the redis client instance
+      const redisClient = redis();
+
+      // find product form the redis
+      const cashe = await redisClient.get(`product:${id}`);
+      if (cashe) {
+        // return the  finding product
+        return res.status(200).json({
+          success: true,
+          message: "product is retrieved from the cashe",
+          product: JSON.parse(cashe),
+        });
+      }
 
       // find the product by using id
       const findProduct = await Product.findById(id);
@@ -85,17 +113,24 @@ class ProductController {
       if (findProduct.length === 0) {
         throw new ErrorHandler("product is not found", 404);
       }
-      // return the  finding product
+
+      // send the product into the cashe
+      await redisClient.set(
+        `product:${findProduct._id}`,
+        JSON.stringify(findProduct)
+      );
+
+      // send the response
       return res.status(200).json({
         success: true,
-        message: "product is retrieved",
+        message: "product is retrieved from the db",
         product: findProduct,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
     }
   }
-  static async updateProduct(req, res) {
+  static async updateProduct(req, res, next) {
     try {
       const { id } = req.params;
 
@@ -117,7 +152,7 @@ class ProductController {
       return next(new ErrorHandler(error.message, 500));
     }
   }
-  static async deleteProduct(req, res) {
+  static async deleteProduct(req, res, next) {
     try {
       const { id } = req.params;
 
@@ -137,7 +172,7 @@ class ProductController {
       return next(new ErrorHandler(error.message, 500));
     }
   }
-  static async searchProduct(req, res) {
+  static async searchProduct(req, res, next) {
     try {
       const { srckey, page = 1, limit = 1 } = req.query;
       const query = {};
@@ -145,7 +180,7 @@ class ProductController {
       // search portion
       if (srckey) {
         query.$or = [
-          { name: { $regex: srckey, $options: " i" } },
+          { name: { $regex: srckey, $options: "i" } },
           { cayegory: { $regex: srckey, $options: "i" } },
           { description: { $regex: srckey, $options: "i" } },
         ];
@@ -160,6 +195,25 @@ class ProductController {
       }
       const skip = (page - 1) * limit;
 
+      //set the redis client instance
+      const redisClient = redis();
+
+      // Try to get cached results from Redis
+      const cacheKey = `products:search:${srckey}`;
+      const cachedProducts = await redisClient.get(cacheKey);
+
+      if (cachedProducts) {
+        return res.status(200).json({
+          success: true,
+          message: "Products retrieved from cache",
+          totalProduct: JSON.parse(cachedProducts).totalProduct,
+          totalPage: JSON.parse(cachedProducts).totalPage,
+          currentPage: page,
+          limit: limit,
+          products: JSON.parse(cachedProducts).products,
+        });
+      }
+
       // find the target product
       const findProduct = await Product.find(query)
         .limit(parseInt(limit))
@@ -173,10 +227,20 @@ class ProductController {
       const totalProduct = await Product.countDocuments();
       const totalPage = Math.ceil(totalProduct / limit);
 
+      // cache the results in Redis
+      const productData = {
+        totalProduct,
+        totalPage,
+        products: findProduct,
+      };
+
+      // send the product into the cashe
+      await redisClient.set(cacheKey, JSON.stringify(productData));
+
       // return all the retrieved value
       return res.status(200).json({
         success: true,
-        message: "product is retrieved",
+        message: "product is retrieved from the db",
         totalProduct: totalProduct,
         totalPage: totalPage,
         currentPage: page,
