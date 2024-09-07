@@ -6,6 +6,7 @@ import databaseConnection from "./database/databse.js";
 import router from "./router/route.js";
 import errMiddlewere from "./errorhandler/errMiddlewere.js";
 import fileUpload from "express-fileupload";
+import consumeContent from "./service/consumer.js";
 
 dotenv.config({
   path: "./config/config.env",
@@ -37,6 +38,7 @@ app.use("/api", router);
 
 // database connection
 databaseConnection();
+consumeContent();
 
 // error handler
 app.use(errMiddlewere);

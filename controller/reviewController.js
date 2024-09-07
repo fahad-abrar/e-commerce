@@ -2,6 +2,7 @@ import User from "../model/userModel.js";
 import Product from "../model/productModel.js";
 import Review from "../model/reviewModel.js";
 import ErrorHandler from "../errorhandler/errHandler.js";
+import produceContent from "../service/producer.js";
 
 class ReviewController {
   static async createReview(req, res, next) {
@@ -35,6 +36,9 @@ class ReviewController {
       };
       // store the review in the dataframe
       const review = await Review.create(reviewSkeleton);
+
+      // sent commemt to analisze the sentiment
+      produceContent(comment);
 
       // restore the no of review and avg reating
       product.reviews.push(review);
